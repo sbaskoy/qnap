@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pfile_picker/pfile_picker.dart';
-
 import '../../../controllers/qnap_controller.dart';
+
+import '../../../utils/encryption.dart';
 
 class QnapLoginWidget extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -15,7 +18,7 @@ class QnapLoginWidget extends StatefulWidget {
 }
 
 class _QnapLoginWidgetState extends State<QnapLoginWidget> {
-  final TextEditingController _qnapFolderController = TextEditingController(text: "/TestKlasoru/Salim/");
+  final TextEditingController _qnapFolderController = TextEditingController();
   final TextEditingController _localDesktopFolderController =
       TextEditingController(text: "C:\\Users\\GaniOtomasyon_005\\Desktop\\QnapTest");
   final _formKey = GlobalKey<FormState>();
@@ -37,11 +40,22 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   void _loginAndStart() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        await widget.qnapController.loginQnap();
-        widget.qnapController.localPathChange(_localDesktopFolderController.text);
-        widget.qnapController.qnapPathChange(_qnapFolderController.text);
-        widget.onLoginSuccess();
-      } catch (ex) {}
+        var path = decryptAESCryptoJS(_qnapFolderController.text, "qnap_key");
+        String? d = jsonDecode(path)["path"];
+        if (d != null) {
+          await widget.qnapController.loginQnap();
+          widget.qnapController.localPathChange(_localDesktopFolderController.text);
+          widget.qnapController.qnapPathChange(d);
+          widget.onLoginSuccess();
+          return;
+        }
+        throw "Geçersiz kod";
+      } catch (ex) {
+        Get.showSnackbar(GetSnackBar(
+          title: "Error",
+          message: ex.toString(),
+        ));
+      }
     }
   }
 
@@ -82,7 +96,7 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
                 child: TextFormField(
                   controller: _qnapFolderController,
                   decoration: const InputDecoration(
-                    labelText: "Qnap proje klasörü",
+                    labelText: "Qnap klasör kodunuz",
                   ),
                   validator: _validator,
                 ),
