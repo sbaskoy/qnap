@@ -3,12 +3,15 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qnap/controllers/loading_controller.dart';
 import 'package:qnap/services/qnap_services.dart';
 import 'package:rxdart/subjects.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../models/file_list_response.dart';
+import '../widgets/new_file_dialog.dart';
 
 class QnapFileController {
   final String sid;
@@ -175,30 +178,42 @@ class QnapController {
     }
   }
 
-  void synchronize() async {
+  void synchronize(BuildContext context) async {
     /// selected local path
     var localDirectory = Directory(_localPath.value);
     await createUploadedFolder();
     var stream = localDirectory.watch(events: FileSystemEvent.all);
 
-    var files = localDirectory.listSync();
-    _localFileList.sink.add(files.whereType<File>().map((e) {
-      return QnapFileController(sid: uuId!, descPath: qnapPath!, filePath: e.path, onSuccess: onUploadSuccess)..load();
-    }).toList());
+    // var files = localDirectory.listSync();
+    // _localFileList.sink.add(files.whereType<File>().map((e) {
+    //   return QnapFileController(sid: uuId!, descPath: qnapPath!, filePath: e.path, onSuccess: onUploadSuccess)..load();
+    // }).toList());
 
     localFileWatcher = stream.listen((event) async {
       if (!event.path.endsWith("Uploaded")) {
         // if created new file
         if (event.type == FileSystemEvent.create) {
-          var item =
-              QnapFileController(descPath: qnapPath!, filePath: event.path, sid: uuId!, onSuccess: onUploadSuccess);
-          pushNewLocalFileItem(item);
+          windowManager.focus();
+         // windowManager.setMaximizable(true);
+          bool? res = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return NewFileDialog(path: event.path);
+            },
+          );
+          if (res == true) {
+            var item =
+                QnapFileController(descPath: qnapPath!, filePath: event.path, sid: uuId!, onSuccess: onUploadSuccess);
+            pushNewLocalFileItem(item);
+          } else {
+            File(event.path).delete();
+          }
         }
       }
     });
 
     qnapFileListTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      qnapFileList();
+      //  qnapFileList();
     });
   }
 

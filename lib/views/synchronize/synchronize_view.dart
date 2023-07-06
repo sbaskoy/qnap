@@ -17,7 +17,7 @@ class _QnapSynchronizeViewState extends State<QnapSynchronizeView> {
   @override
   void initState() {
     super.initState();
-    widget.qnapController.synchronize();
+    widget.qnapController.synchronize(context);
   }
 
   @override

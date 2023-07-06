@@ -40,12 +40,12 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   void _loginAndStart() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        var path = decryptAESCryptoJS(_qnapFolderController.text, "qnap_key");
-        String? d = jsonDecode(path)["path"];
-        if (d != null) {
-          await widget.qnapController.loginQnap();
+        var path = _qnapFolderController.text; // decryptAESCryptoJS(_qnapFolderController.text, "qnap_key");
+        //String? d = jsonDecode(path)["path"];
+        if (path != null) {
+          //await widget.qnapController.loginQnap();
           widget.qnapController.localPathChange(_localDesktopFolderController.text);
-          widget.qnapController.qnapPathChange(d);
+          widget.qnapController.qnapPathChange(path);
           widget.onLoginSuccess();
           return;
         }
@@ -60,9 +60,9 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   }
 
   String? _validator(String? val) {
-    if (val?.isEmpty ?? true) {
-      return "Bu alan zorunludur";
-    }
+    // if (val?.isEmpty ?? true) {
+    //   return "Bu alan zorunludur";
+    // }
     return null;
   }
 
