@@ -8,14 +8,19 @@ import 'package:xml/xml.dart' as xml;
 import 'package:dio/dio.dart';
 import '../models/file_list_response.dart';
 import '../utils/qnap.dart';
+import 'package:path/path.dart' as path;
+
+import '../utils/settings.dart';
+
 
 class QnapServices {
   QnapServices._();
   static final _manager = BaseNetworkManager(Constants.qnapBaseUrl);
   static Future<String?> login() async {
+    var setting =await loadSetting();
     String? res = await _manager.get(
       "authLogin.cgi",
-      queryParams: {"user": "salim", "pwd": ezEncode("123456@Salim")},
+      queryParams: {"user": setting.qnapUserName, "pwd": ezEncode(setting.qnapPassword)},
     );
     if (res != null) {
       final responseDocument = xml.XmlDocument.parse(res);
@@ -52,19 +57,22 @@ class QnapServices {
 
   static Future<FileListResponse?> listFiles(String authSid, String path) async {
     String? res = await _manager.get(
-      "filemanager/utilRequest.cgi",
-      queryParams: {
-        "func": "get_list",
-        "sid": authSid,
-        "path": path,
-        "dir": "ASC",
-        "sort": "nartual",
-        "start": "0",
-        "limit": "100"
-      },
+      "filemanager/utilRequest.cgi?func=get_list&sid=$authSid&path=$path&dir=ASC&sort=nartual&start=0&limit=100",
+      // queryParams: {
+      //   "func": "get_list",
+      //   "sid": authSid,
+      //   "path": path,
+      //   "dir": "ASC",
+      //   "sort": "nartual",
+      //   "start": "0",
+      //   "limit": "100"
+      // },
     );
     if (res != null) {
       var map = jsonDecode(res);
+      if(map['status'] != null){
+        throw "Error";
+      }
       return FileListResponse.fromJson(map);
     }
     return null;
@@ -207,19 +215,22 @@ class QnapServices {
   }) async {
     try {
       final dio = Dio();
-      String fileName = filePath.split('\\').last;
+      String fileName = path.basename(filePath); //filePath.split('\\').last;
       var arr = fileName.split(".");
       var name = arr.sublist(0, arr.length - 1).join("_");
 
       var newName = "${name}_${DateTime.now().microsecondsSinceEpoch}.${arr.last}";
-      var url = _manager.getUri("filemanager/utilRequest.cgi", queryParams: {
-        "func": "upload",
-        "type": "standard",
-        "sid": sid,
-        "dest_path": descPath,
-        "overwrite": "0",
-        "progress": "$descPath/$newName".replaceAll("/", "-")
-      });
+      var progress='$descPath/$newName'.replaceAll("/", "-");
+      var url = _manager.getUri("filemanager/utilRequest.cgi?func=upload&type=standard&sid=$sid&dest_path=$descPath&overwrite=0&progress=$progress", 
+      // queryParams: {
+      //   "func": "upload",
+      //   "type": "standard",
+      //   "sid": sid,
+      //   "dest_path": descPath,
+      //   "overwrite": "0",
+      //   "progress": '$descPath/$newName'.replaceAll("/", "-")
+      // },
+      );
       FormData data = FormData.fromMap({});
 
       data.files.add(MapEntry(

@@ -36,102 +36,116 @@ class _QnapSynchronizeViewState extends State<QnapSynchronizeView> {
       child: SizedBox(
         width: size.width * 0.8,
         height: size.height * 0.8,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
+        child: StreamBuilder<String?>(
+          stream: widget.qnapController.errorStream,
+          builder: (context, snapshot) {
+            if(snapshot.hasData){
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                        border: Border(
-                      bottom: BorderSide(),
-                    )),
-                    child: Text(
-                      widget.qnapController.localPath!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                  Center(child: Text(snapshot.data.toString()),),
+                  Center(child: Text(widget.qnapController.qnapPath ?? ""),),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                            border: Border(
+                          bottom: BorderSide(),
+                        )),
+                        child: Text(
+                          widget.qnapController.localPath!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: StreamBuilder(
-                        stream: widget.qnapController.localFileListStream,
-                        builder: (context, snapshot) {
-                          var files = snapshot.data ?? [];
-                          return ListView.builder(
-                            itemCount: files.length,
-                            itemBuilder: (context, index) {
-                              var file = files[index];
-                              return UploadFileItem(
-                                file: file,
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: StreamBuilder(
+                            stream: widget.qnapController.localFileListStream,
+                            builder: (context, snapshot) {
+                              var files = snapshot.data ?? [];
+                              return ListView.builder(
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  var file = files[index];
+                                  return UploadFileItem(
+                                    file: file,
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Container(
-              width: 2,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                        border: Border(
-                      bottom: BorderSide(),
-                    )),
-                    child: Text(
-                      widget.qnapController.qnapPath!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                ),
+                Container(
+                  width: 2,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                            border: Border(
+                          bottom: BorderSide(),
+                        )),
+                        child: Text(
+                          widget.qnapController.qnapPath!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: StreamBuilder(
-                        stream: widget.qnapController.qnapFileListStream,
-                        builder: (context, snapshot) {
-                          var files = snapshot.data?.datas ?? [];
-
-                          return ListView.builder(
-                            itemCount: files.length,
-                            itemBuilder: (context, index) {
-                              var file = files[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(file.filename ?? ""),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: StreamBuilder(
+                            stream: widget.qnapController.qnapFileListStream,
+                            builder: (context, snapshot) {
+                              var files = snapshot.data?.datas ?? [];
+        
+                              return ListView.builder(
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  var file = files[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(file.filename ?? ""),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          }
         ),
       ),
     );

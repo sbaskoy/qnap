@@ -4,6 +4,7 @@ import 'package:qnap/models/user_model.dart';
 import 'package:qnap/services/user_services.dart';
 import 'package:qnap/views/home/home_view.dart';
 import 'package:rxdart/subjects.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthState {
   static AuthState? _instance;
@@ -18,11 +19,16 @@ class AuthState {
   static Stream<AuthModel?> get authUserStream => _authPrivateInstance._user.stream;
   static String? get token => _authPrivateInstance._user.valueOrNull?.token ?? "";
 
-  static void login(String username, String password) async {
+  static void login(String username, String password,bool savePassword) async {
     try {
       AppProgressState.change(true);
       AuthModel? user = await UserService.login(username, password);
       if (user != null) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setString("password", savePassword ?  password : "");
+          prefs.setString("username", savePassword ? username : "");
+          prefs.setBool("save", savePassword );
+        
         _authPrivateInstance._user.sink.add(user);
         Get.offAll(
           const HomeView(),

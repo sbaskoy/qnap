@@ -7,6 +7,7 @@ import 'package:pfile_picker/pfile_picker.dart';
 import '../../../controllers/qnap_controller.dart';
 
 import '../../../utils/encryption.dart';
+import '../../../utils/settings.dart';
 
 class QnapLoginWidget extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -20,7 +21,7 @@ class QnapLoginWidget extends StatefulWidget {
 class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   final TextEditingController _qnapFolderController = TextEditingController();
   final TextEditingController _localDesktopFolderController =
-      TextEditingController(text: "C:\\Users\\GaniOtomasyon_005\\Desktop\\QnapTest");
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   Future<void> _selectFolder() async {
@@ -40,7 +41,8 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   void _loginAndStart() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        var path = decryptAESCryptoJS(_qnapFolderController.text, "qnap_key");
+        var setting =await loadSetting();
+        var path = decryptAESCryptoJS(_qnapFolderController.text, setting.qnapAesKey);
         String? d = jsonDecode(path)["path"];
         if (d != null) {
           await widget.qnapController.loginQnap();

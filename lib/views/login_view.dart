@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qnap/controllers/auth_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -9,8 +10,33 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final TextEditingController _usernameController = TextEditingController(text: "salimcancontact@gmail.com");
-  final TextEditingController _passwordController = TextEditingController(text: "123Salim");
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool savePassword=false;
+  bool hidePassword=true;
+
+  @override
+  void initState() {
+    super.initState();
+   
+  }
+
+  @override
+  void didChangeDependencies() {
+    
+    super.didChangeDependencies();
+     loadPrefs();
+  }
+
+  void loadPrefs()async {
+     final SharedPreferences prefs = await SharedPreferences.getInstance();
+     _usernameController.text=prefs.getString("username") ?? "";
+     _passwordController.text=prefs.getString("password") ?? "";
+     setState(() {
+       savePassword=prefs.getBool("save") ?? false;
+     });
+  }
+
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
@@ -51,15 +77,33 @@ class _LoginViewState extends State<LoginView> {
                      Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: TextField(
+                        obscureText: hidePassword,
                         controller: _passwordController,
-                        decoration: const InputDecoration(
+                        decoration:  InputDecoration(
                           labelText: "Şifre",
+                          suffix: InkWell(
+                            onTap: (){
+                            setState(() {
+                              hidePassword=!hidePassword;
+                            });
+                            },
+                            child: Icon(
+                              hidePassword ? Icons.visibility_off : Icons.visibility
+                            ),
+                          )
                         ),
                       ),
                     ),
+                    CheckboxListTile(
+                      title: Text("Şifreyi kaydet"),
+                      value: savePassword, onChanged: (val){
+                      setState(() {
+                        savePassword=!savePassword;
+                      });
+                    }),
                     InkWell(
                       onTap: () {
-                        AuthState.login(_usernameController.text, _passwordController.text);
+                        AuthState.login(_usernameController.text, _passwordController.text,savePassword);
                       },
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
