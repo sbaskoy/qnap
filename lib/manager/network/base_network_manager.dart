@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import "package:http/http.dart" as http;
 
@@ -13,6 +14,7 @@ class BaseNetworkManager {
     if (queryParams != null) {
       uri = uri.replace(queryParameters: queryParams);
     }
+    log(uri.toString());
     return uri;
   }
 

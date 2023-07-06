@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:path/path.dart' as path;
+import 'package:qnap/constants/constants.dart';
 import 'package:qnap/controllers/loading_controller.dart';
 import 'package:qnap/services/qnap_services.dart';
 import 'package:rxdart/subjects.dart';
@@ -24,6 +26,7 @@ class QnapFileController {
 
   Stream<bool> get loading => _loading.stream;
   CancelToken cancelToken = CancelToken();
+  bool cancelRecurcive = false;
   Future<bool> loadQnap() async {
     var res = await QnapServices.upload(
       sid: sid,
@@ -34,6 +37,7 @@ class QnapFileController {
     if (res) {
       return true;
     }
+    if (cancelRecurcive) return false;
     print("File can not uploaded -> $filePath");
     return await loadQnap();
   }
@@ -50,12 +54,14 @@ class QnapFileController {
       }
       throw "failed file";
     } catch (ex) {
-      var name = filePath.split("\\").last;
+      var name = path.basename(filePath);
+      //var name = filePath.split("\\").last;
       _loading.sink.addError("$name dosyası yüklendi fakat Uploaded klasörüne taşınamadı.");
     }
   }
 
   destroy() {
+    cancelRecurcive = true;
     cancelToken.cancel();
   }
 }
@@ -64,10 +70,12 @@ class QnapController {
   final _uuid = BehaviorSubject<String>();
   final _localPath = BehaviorSubject<String>();
   final _qnapPath = BehaviorSubject<String>();
+  final _qnapFileListError = BehaviorSubject<String?>();
   final _localFileList = BehaviorSubject<List<QnapFileController>>.seeded([]);
   final _qnapFileList = BehaviorSubject<FileListResponse?>();
 
   Stream<String?> get uuIdStream => _uuid.stream;
+  Stream<String?> get errorStream => _qnapFileListError.stream;
   Stream<List<QnapFileController>> get localFileListStream => _localFileList.stream;
   Stream<FileListResponse?> get qnapFileListStream => _qnapFileList.stream;
 
@@ -83,12 +91,20 @@ class QnapController {
   Timer? qnapFileListTimer;
   StreamSubscription<FileSystemEvent>? localFileWatcher;
 
-  void qnapFileList() async {
-    if (uuId != null && qnapPath != null) {
-      FileListResponse? res = await QnapServices.listFiles(uuId!, qnapPath!);
-      if (res != null) {
-        _qnapFileList.sink.add(res);
+  Future<bool> qnapFileList() async {
+    try {
+      if (uuId != null && qnapPath != null) {
+        FileListResponse? res = await QnapServices.listFiles(uuId!, qnapPath!);
+        if (res != null) {
+          _qnapFileList.sink.add(res);
+          return true;
+        }
       }
+      return false;
+    } catch (ex) {
+      _qnapFileListError.sink.add(
+          "Seçili qnap dosya yoluna baglanılamadı. Bu klasöre erişim yetkiniz olmayabilir. Kodunuzu kontrol ediniz");
+      return false;
     }
   }
 
@@ -113,7 +129,7 @@ class QnapController {
 
   Future<void> createUploadedFolder() async {
     /// uploaded file
-    var uploadedDirectory = Directory("$localPath\\Uploaded");
+    var uploadedDirectory = Directory(path.join(localPath!, Constants.uploadedDirectoryName));
 
     var isExistsUploadedDirectory = await uploadedDirectory.exists();
 
@@ -130,14 +146,14 @@ class QnapController {
 
     await createUploadedFolder();
 
-    var name = sourcePath.split("\\").last;
-    var newPath = "$localPath\\Uploaded\\$name";
+    var name = path.basename(sourcePath); //  sourcePath.split("\\").last;
+    var newPath = path.joinAll([localPath!, Constants.uploadedDirectoryName, name]); //"$localPath\\Uploaded\\$name";
     try {
       var newFile = File(newPath);
       var isExists = await newFile.exists();
       if (isExists) {
         name = "${DateTime.now().millisecondsSinceEpoch}_$name";
-        newPath = "$localPath\\Uploaded\\$name";
+        newPath = path.joinAll([localPath!, Constants.uploadedDirectoryName, name]); //"$localPath\\Uploaded\\$name";
       }
 
       // prefer using rename as it is probably faster
@@ -179,22 +195,33 @@ class QnapController {
   }
 
   void synchronize(BuildContext context) async {
+    if (localPath == null) return;
+
     /// selected local path
-    var localDirectory = Directory(_localPath.value);
+    var localDirectory = Directory(localPath!);
     await createUploadedFolder();
     var stream = localDirectory.watch(events: FileSystemEvent.all);
 
-    // var files = localDirectory.listSync();
-    // _localFileList.sink.add(files.whereType<File>().map((e) {
-    //   return QnapFileController(sid: uuId!, descPath: qnapPath!, filePath: e.path, onSuccess: onUploadSuccess)..load();
-    // }).toList());
+    var files = localDirectory.listSync();
+
+    //! burayı aç
+    files = files.whereType<File>().where((element) {
+      var name = path.basename(element.path);
+      return !name.startsWith(".");
+    }).toList();
+
+    //! burayı aç
+    _localFileList.sink.add(files.map((e) {
+      return QnapFileController(sid: uuId!, descPath: qnapPath!, filePath: e.path, onSuccess: onUploadSuccess)..load();
+    }).toList());
 
     localFileWatcher = stream.listen((event) async {
-      if (!event.path.endsWith("Uploaded")) {
+      if (!event.path.endsWith(Constants.uploadedDirectoryName)) {
         // if created new file
         if (event.type == FileSystemEvent.create) {
           windowManager.focus();
-         // windowManager.setMaximizable(true);
+          windowManager.show();
+          // windowManager.setMaximizable(true);
           bool? res = await showDialog<bool>(
             context: context,
             builder: (context) {
@@ -212,8 +239,9 @@ class QnapController {
       }
     });
 
+    //! burayı aç
     qnapFileListTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      //  qnapFileList();
+      qnapFileList();
     });
   }
 
@@ -225,9 +253,9 @@ class QnapController {
         _uuid.sink.add(id);
         return;
       }
-      throw "error";
+      throw "Qnap baglantısı kurulamadı. Kullanıcı adınızı ve şifrenizi kontrol ediniz.";
     } catch (ex) {
-      log("Qnap login error $ex");
+      rethrow;
     } finally {
       AppProgressState.change(false);
     }
@@ -240,6 +268,7 @@ class QnapController {
       element.destroy();
     }
     _localFileList.sink.add([]);
+    _qnapFileListError.sink.add(null);
     _qnapFileList.sink.add(null);
   }
 }

@@ -6,8 +6,6 @@ import 'package:get/get.dart';
 import 'package:pfile_picker/pfile_picker.dart';
 import '../../../controllers/qnap_controller.dart';
 
-import '../../../utils/encryption.dart';
-
 class QnapLoginWidget extends StatefulWidget {
   final VoidCallback onLoginSuccess;
   final QnapController qnapController;
@@ -19,8 +17,7 @@ class QnapLoginWidget extends StatefulWidget {
 
 class _QnapLoginWidgetState extends State<QnapLoginWidget> {
   final TextEditingController _qnapFolderController = TextEditingController();
-  final TextEditingController _localDesktopFolderController =
-      TextEditingController(text: "C:\\Users\\GaniOtomasyon_005\\Desktop\\QnapTest");
+  final TextEditingController _localDesktopFolderController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   Future<void> _selectFolder() async {
@@ -41,11 +38,11 @@ class _QnapLoginWidgetState extends State<QnapLoginWidget> {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         var path = _qnapFolderController.text; // decryptAESCryptoJS(_qnapFolderController.text, "qnap_key");
-        //String? d = jsonDecode(path)["path"];
-        if (path != null) {
-          //await widget.qnapController.loginQnap();
+        String? d = jsonDecode(path)["path"];
+        if (d != null) {
+          await widget.qnapController.loginQnap();
           widget.qnapController.localPathChange(_localDesktopFolderController.text);
-          widget.qnapController.qnapPathChange(path);
+          widget.qnapController.qnapPathChange(d); // d
           widget.onLoginSuccess();
           return;
         }

@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
 
@@ -36,7 +36,8 @@ class _NewFileDialogState extends State<NewFileDialog> {
           Expanded(
             child: isImage(widget.path)
                 ? Image.file(File(widget.path))
-                : Center(
+                : Padding(
+                    padding: const EdgeInsets.all(8),
                     child: Material(
                       elevation: 20,
                       borderRadius: BorderRadius.circular(50),
@@ -47,11 +48,26 @@ class _NewFileDialogState extends State<NewFileDialog> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.picture_as_pdf),
-                            //Text()
-                          ],
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.picture_as_pdf,
+                                size: 50,
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                path.basename(widget.path),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

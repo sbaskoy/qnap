@@ -1,5 +1,6 @@
 class Constants {
   Constants._();
+    static String get uploadedDirectoryName => "Uploaded";
   static String get plannerBaseUrl => "http://arge_planner.ganimuhendislik.com";
   static String get qnapBaseUrl => "http://10.0.0.103:8080/cgi-bin";
   static String get userAvatarImageUrl =>
