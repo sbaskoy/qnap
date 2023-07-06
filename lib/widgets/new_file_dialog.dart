@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
-import "path"
+
 class NewFileDialog extends StatefulWidget {
   final String path;
   const NewFileDialog({super.key, required this.path});
@@ -50,7 +50,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
                         child: Column(
                           children: [
                             Icon(Icons.picture_as_pdf),
-                            Text()
+                            //Text()
                           ],
                         ),
                       ),
